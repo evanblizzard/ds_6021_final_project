@@ -22,16 +22,18 @@ def load_les():
     # 2 files share most column names, clean them same way
 
     for df in (house, senate):
-        df.columns = df.columns.astype(str).str.strip()
+        df.columns = df.columns.astype(str).str.strip().str.lower()
     house["chamber"] = "House"
     senate["chamber"] = "Senate"
 
-    house = house.rename(columns={"congress number": "congress"})
-    senate = senate.rename(columns={"congress number": "congress"})
-
     # stacking house on top of senate. columns only in one file will be NaN
     les = pd.concat([house, senate], ignore_index=True)
-    return les[les['congress'].isin(config.CONGRESSES)]
+
+    # renaming silently does nothing if no match, so check it worked
+    les = les.rename(columns={"congress number": "congress"})
+    if "congress" not in les.columns:
+        raise KeyError(f"no congress column in LES files: {list(les.columns)}")
+    return les[les["congress"].isin(config.CONGRESSES)]
 
 
 def main():
