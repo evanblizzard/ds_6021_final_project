@@ -32,7 +32,9 @@ def main():
 
         # the type must be lowercase in the URL (HR -> hr)
         url = f"{config.API_BASE}/{bill.congress}/{bill.type.lower()}/{bill.number}" # change url with each iter depending on bill object
-        try:
+        try: # this stupid ass .lower() line will not stop flagging itself as an error but i think it's just because 
+            # python isn't sure what data type bill.type will be so it's not sure if .lower() can be used
+            # should still work
             response = requests.get(url, params=params, headers=headers, timeout=30)  #  send request
             response.raise_for_status()
         except requests.HTTPError: # if error, tell me i've been rate limited
