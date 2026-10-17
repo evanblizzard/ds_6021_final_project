@@ -35,13 +35,18 @@ def main():
         try: # this stupid ass .lower() line will not stop flagging itself as an error but i think it's just because 
             # python isn't sure what data type bill.type will be so it's not sure if .lower() can be used
             # should still work
-            response = requests.get(url, params=params, headers=headers, timeout=30)  #  send request
+            response = requests.get(url, params=params, headers=headers, timeout=60)  #  send request
             response.raise_for_status()
         except requests.HTTPError: # if error, tell me i've been rate limited
             if response.status_code == 429: # rate limited, stop, wait, rerun
                 raise SystemExit("Rate Limited (429). Wait a minute, then re-run.")
             print("FAILED", bill.bill_id, response.status_code)
             failed.append(bill.bill_id)
+            continue
+        except requests.RequestException as e:
+            print("FAILED", bill.bill_id, type(e).__name__)
+            failed.append(bill.bill_id)
+            time.sleep(5)
             continue
 
 
@@ -50,7 +55,16 @@ def main():
         tmp = filename.with_suffix(".json.tmp")
         with open(tmp, 'w') as f:
             json.dump(response.json(), f) # dump write Python dict as json text
-        os.replace(tmp, filename) # rename it to the real name
+        for attempt in range(5):
+            try:
+                os.replace(tmp, filename)  # rename it to the real name
+                break
+            except PermissionError:
+                time.sleep(0.5)  # file briefly locked by antivirus/OneDrive; wait and retry
+        else:
+            print("FAILED rename", bill.bill_id)
+            failed.append(bill.bill_id)
+            continue # rename it to the real name
 
         print(f"{i}/{len(bills)}", bill.bill_id, response.status_code) # progress printer
         time.sleep(1) # be nice to API
