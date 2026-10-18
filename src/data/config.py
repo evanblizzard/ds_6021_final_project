@@ -14,7 +14,7 @@ IDEOLOGY_DIR = ROOT / "data" / "ideology_data"
 LES_DIR = ROOT / "data" / "les_data"
 DETAIL_DIR = RAW_DIR / "bill_details"
 
-CONGRESSES = [118]
+CONGRESSES = [116, 117, 118]
 BILL_TYPES = ["hr", "s", "hjres", "sjres"]
 
 API_BASE = "https://api.congress.gov/v3/bill"

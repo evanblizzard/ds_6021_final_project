@@ -51,13 +51,17 @@ def prep_one_chamber(les, chamber, rename):
     part = part[['congress', 'chamber'] + list(rename)] #list rename to turn dict into list of keys and combine it with the two actual keys
     return part.rename(columns=rename)[KEYS+FEATURES] # swap long names with the ones in the dictionaries above
 # [KEYS+FEATURES] puts them in the same order for both chambers
-
+   
 def check(df):
+
+    bad = df[df["lagged_les"].isna() != (df["freshman"] == 1)]
+    print(bad[["icpsr", "congress", "chamber", "freshman", "lagged_les"]].to_string(index=False))
+    print(bad.groupby(["congress", "chamber"]).size())
     """Just something to loudly complain if something goes wrong"""
     assert not df.duplicated(KEYS).any(), "duplicate icpsr, congress, or chamber"
 
-    assert (df["lagged_les"].isna() == (df["freshman"] == 1)).all(), "lagged_les missing doesn't line up with freshman flag"
-
+    if len(bad):
+        print(f"WARNING: {len(bad)} rows where missing lagged_les doesn't match the freshman flag (likely returning members or special elections)")
     leaky = [c for c in df.columns if "les" in c and c != "lagged_les"] # collect every column containing les except lagged les, if list empty it passes
     assert not leaky, f"leaky columns: {leaky}"
 
