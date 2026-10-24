@@ -8,19 +8,24 @@ import config
 
 # three columns that ID one LES row. merge on all three
 KEYS = ['icpsr', 'congress', 'chamber']
-
+LES_ICPSR_OVERRIDE = {
+    "V000133": 21980, # Van Drew
+    "S001191": 21300, # Sinema
+    "M001183": 40915, # Manchin
+}
 def load_crosswalk():
     # read members_ideology.csv, keep bioguide_id, congress, icpsr
     crosswalk = pd.read_csv(config.PROCESSED_DIR / 'members_ideology.csv')
     # only keeping the three columns necessary to translate ids
-    crosswalk = crosswalk[['bioguide_id', 'congress', 'icpsr']]
+    crosswalk = crosswalk[['bioguide_id', 'congress', 'icpsr', 'nominate_dim1', 'nominate_dim2']]
     crosswalk = crosswalk.rename(columns={'bioguide_id': "sponsor_bioguide_id"})
+    bad_row = (crosswalk['sponsor_bioguide_id'] == 'M001183') & (crosswalk['icpsr'] == 90915)
+    crosswalk = crosswalk[~bad_row]
+    # .map() to look up bioguide id in dict, giving LES number for the three that are wrong and NaN for everyone else
+    override = crosswalk["sponsor_bioguide_id"].map(LES_ICPSR_OVERRIDE)   # NaN for everyone else
+    crosswalk["icpsr"] = override.fillna(crosswalk["icpsr"]).astype(int) # keeps original number when dict had nothing
 
 
-    # manchin has two rows with different icpsr (40915 = Democrat, 90915 = independent)
-    # les file only knows 40915 so im dropping the other one
-    bad_row = (crosswalk['sponsor_bioguide_id'] == "M001183") & (crosswalk['icpsr'] == 90915)
-    crosswalk = crosswalk[~bad_row] # ~ inverts truth so this will keep everything but bad row
 
     # schiff and kim have a house row and senate row with same icpsr
     # doesn't really matter which one we keep
@@ -33,7 +38,8 @@ def load_crosswalk():
     return crosswalk
 
 def main():
-    bills = pd.read_csv(config.PROCESSED_DIR / 'bills_with_sponsors.csv')
+    bills = pd.read_csv(config.PROCESSED_DIR / 'govinfo_bills.csv')
+    bills = bills.rename(columns={'sponsor_bioguide': 'sponsor_bioguide_id'})
     n_bills = len(bills) # doing a left merge, don't want this to change
     # add icpsr to each bill
 
@@ -48,7 +54,7 @@ def main():
 
     # sponsor sits in chamber bill started in
     # copy originChamber into a column named like one in LES table
-    df['chamber'] = df['originChamber']
+    df['chamber'] = df['origin_chamber']
 
     # add les features
     les = pd.read_csv(config.PROCESSED_DIR / 'les_features.csv')
@@ -77,7 +83,7 @@ def main():
     print(lost.head(20).to_string(index=False))
 
     # save to csv, dropping _merge column bc it was just a helper
-    out = config.PROCESSED_DIR / "bills_full.csv"
+    out = config.PROCESSED_DIR / "bills_full_FINAL.csv"
     df.drop(columns="_merge").to_csv(out, index=False)
     print("saved", out)
 

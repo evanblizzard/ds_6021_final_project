@@ -94,6 +94,8 @@ def main():
 
 
     check(df)
+    df["lagged_les_missing"] = df["lagged_les"].isna().astype(int)   # 1 = no previous score
+    df["lagged_les"] = df["lagged_les"].fillna(0)
     check_voteview_match(df)
 
     print(df.shape)
