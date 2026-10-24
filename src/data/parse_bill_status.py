@@ -16,8 +16,8 @@ def parse_one(path):
     bill = ET.parse(path).getroot().find("bill") 
 
     congress = bill.findtext("congress")
-    bill_type = bill.findtext('type').lower()
-    number = bill.findtext('number')
+    bill_type = (bill.findtext('type').lower() or bill.findtext('billType').lower())
+    number = (bill.findtext('number') or bill.findtext('billNumber'))
     bill_id = f"{congress}-{bill_type}-{number}" # like 118-hr-10
 
     # first get sponsor. find() returns none when bill has no sponsor so we have to test for that before asking it for text
