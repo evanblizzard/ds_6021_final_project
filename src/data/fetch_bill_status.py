@@ -19,7 +19,7 @@ PAUSE = 0.2 # pause between downloads to be nice
 
 OUT_DIR = config.RAW_DIR / "govinfo"
 
-
+# AI FLAG - used to understand structure of govinfo site and aid in generating file list function to be utilized in main()
 def list_files(congress, bill_type):
     """
     ask govinfo which XML files exist in one folder. EX: .../BILLSTATUS/118/hr

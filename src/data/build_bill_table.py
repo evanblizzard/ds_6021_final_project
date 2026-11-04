@@ -13,6 +13,8 @@ LES_ICPSR_OVERRIDE = {
     "S001191": 21300, # Sinema
     "M001183": 40915, # Manchin
 }
+
+# AI flag - used claude to help me with merging logic across different ID schemes among datasets
 def load_crosswalk():
     # read members_ideology.csv, keep bioguide_id, congress, icpsr
     crosswalk = pd.read_csv(config.PROCESSED_DIR / 'members_ideology.csv')

@@ -10,6 +10,7 @@ import config
 
 XML_DIR = config.RAW_DIR / "govinfo"
 
+# AI flag - not previously familiar with reading XML - used Claude to help me implement xml package methods to download data
 def parse_one(path):
     """Read ONE xml file. Return a dict for the bill and a list of dicts for its actions
     """
