@@ -3,3 +3,7 @@ __pycache__
 Notebooks/test_data
 data/*
 !data/processed/*
+data/processed/govinfo_actions.csv
+data/processed/govinfo_bills.csv
+data/processed/bills_full_FINAL.csv
+data/processed/bills.csv

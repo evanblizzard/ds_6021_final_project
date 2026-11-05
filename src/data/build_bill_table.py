@@ -13,6 +13,10 @@ LES_ICPSR_OVERRIDE = {
     "S001191": 21300, # Sinema
     "M001183": 40915, # Manchin
 }
+# (bioguide, congress) -> icpsr LES uses, for members whose number differs only in some congresses
+LES_ICPSR_OVERRIDE_BY_CONGRESS = {
+    ("S000709", 111): 94910,   # Specter after R->D switch
+}
 
 # AI flag - used claude to help me with merging logic across different ID schemes among datasets
 def load_crosswalk():
@@ -28,7 +32,9 @@ def load_crosswalk():
     crosswalk["icpsr"] = override.fillna(crosswalk["icpsr"]).astype(int) # keeps original number when dict had nothing
 
 
-
+    for (bio, cong), icpsr in LES_ICPSR_OVERRIDE_BY_CONGRESS.items():
+        match = (crosswalk["sponsor_bioguide_id"] == bio) & (crosswalk["congress"] == cong)
+        crosswalk.loc[match, "icpsr"] = icpsr
     # schiff and kim have a house row and senate row with same icpsr
     # doesn't really matter which one we keep
     crosswalk  = crosswalk.drop_duplicates(subset=['sponsor_bioguide_id', 'congress'], keep='first')
@@ -80,9 +86,9 @@ def main():
     print("bills with LES features:     ", (df['_merge'] == "both").sum())
     # sponsors we translated but LES didn't know: has an icpsr but merge said not "both"
     lost = df[has_icpsr & (df['_merge'] != "both")]
-    lost = lost[['sponsor_bioguide_id', 'chamber']].drop_duplicates() # one line per person
-    print(f"sponsors with an icpsr but no les row: {len(lost)} (first 20 below)")
-    print(lost.head(20).to_string(index=False))
+    lost = lost[['sponsor_bioguide_id', 'congress', 'chamber', 'icpsr']].drop_duplicates()
+    print(f"sponsors with an icpsr but no les row: {len(lost)}")
+    print(lost.to_string(index=False))
 
     # save to csv, dropping _merge column bc it was just a helper
     out = config.PROCESSED_DIR / "bills_full_FINAL.csv"
@@ -93,3 +99,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# the 22 rows with no LES are all nonvoting delegates - don't matter

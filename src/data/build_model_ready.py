@@ -6,7 +6,7 @@ outcome: 1=died, 2=passed its own chamber, 3=law
 import pandas as pd
 import config
 # congress number -> day that congress ended (last day to pass anything)
-CONGRESS_END = {116: '2021-01-03', 117: '2023-01-03', 118: '2025-01-03'}
+
 
 # titles containing these are naming/commemorative bills
 COMMEM_PATTERN = "post office|designate the facility|outpatient clinic|commemorative coin|gold medal"
@@ -15,7 +15,7 @@ COMMEM_PATTERN = "post office|designate the facility|outpatient clinic|commemora
 df = pd.read_csv(config.PROCESSED_DIR / "bills_full_FINAL.csv")
 labels = pd.read_csv(config.PROCESSED_DIR / "labels.csv")
 n_start = len(df)
-
+end_date = pd.to_datetime((1789 + 2 * df["congress"]).astype(str) + "-01-03") # apparently each congress ends on january 3 of year 1789 + 2c (c being congress number)
 
 
 # add target (one_to_one each bill id must appear once on both sides)
@@ -24,8 +24,8 @@ assert df['outcome'].notna().all(), "some bills have no label"
 
 # new columns
 # days left: how much time bill had. bill introduce late has small chance
-end_date = df['congress'].map(CONGRESS_END)
-df['days_left_in_congress'] = (pd.to_datetime(end_date) - pd.to_datetime(df['introduced_date'])).dt.days
+end_date = pd.to_datetime((1789 + 2 * df["congress"]).astype(str) + "-01-03")
+df['days_left_in_congress'] = (end_date - pd.to_datetime(df['introduced_date'])).dt.days
 
 # commemorative: 1 if title looks like post office or coin or naming bill
 df['commemorative'] = df['title'].str.contains(COMMEM_PATTERN, case=False, na=False).astype(int)
@@ -44,8 +44,21 @@ df['lagged_les'] = df['lagged_les'].fillna(0)
 # sponsor_majority = is sponsor in majority party
 df['sponsor_majority'] = df['majority']
 
+SWITCHES = [ # bioguide, congress, switch_date, majority_after
+    ("S000709", 111, "2009-04-30", 1), # specter R -> D
+    ("G000565", 111, "2009-12-22", 0), # parker griffith d -> R
+    ("V000133", 116, "2019-12-19", 0) # Van Drew D-> R
+    
+    ]
+intro = pd.to_datetime(df["introduced_date"])
+for bio, cong, date, after, in SWITCHES: # unpack the tuples into four variables
+    rows = (df["sponsor_bioguide_id"] == bio) & (df["congress"] == cong) # identify all bills in specified congress from a sponsor
+    df.loc[rows, "sponsor_majority"] = (intro[rows] >= date).map({True: after, False: 1 - after}) # intro date of only selected bills compared with switch date: results in series where True if bill was introduced after switch, False if before
+    # then write those values into sponsor_majority columns for selected rows
+
+
 # senate independents who caucus with the majority count as majority in the 117th/118th
-indep = (df["sponsor_party"] == "I") & (df["origin_chamber"] == "Senate") & df["congress"].isin([117, 118])
+indep = (df["sponsor_party"] == "I") & (df["origin_chamber"] == "Senate") & df["congress"].isin([110, 111, 112, 113, 114, 115, 116, 117, 118])
 
 df.loc[indep, 'sponsor_majority'] = 1
 df['sponsor_party'] = df['sponsor_party'].replace({'I': 'Other', 'L': 'Other'}) # tiny parties -> 1 group
@@ -94,3 +107,4 @@ print(df.isna().sum()[df.isna().sum()>0].to_string() or "None")
 print("\noutcome counts:\n", df['outcome'].value_counts().sort_index().to_string())
 df.to_csv(config.PROCESSED_DIR / 'model_ready_billz.csv', index=False)
 print('saved model_ready_billz.csv:', df.shape)
+print(df['days_left_in_congress'].describe()) # just checking no day counts are negative
