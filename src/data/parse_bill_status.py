@@ -35,9 +35,13 @@ def parse_one(path):
     # cosponsor who signed on when bill was introduced
     # cosponsors keep growing after introudction, they leak outcome; original sponsor count doesn't
     n_original = 0
+    # adding to engineer bipartisan original cosponsors feature:
+    n_original_bipartisan = 0
     for c in bill.findall('cosponsors/item'):
         if (c.findtext('isOriginalCosponsor') or "").strip().lower() == 'true':
             n_original +=1
+            if c.findtext('party') not in (None, sponsor_party):
+                n_original_bipartisan += 1
 
     official_intro, short_intro = None, []
     for t in bill.findall("titles/item"):
@@ -65,6 +69,7 @@ def parse_one(path):
         'label_n_laws': len(bill.findall('laws/item')), # outcome!
         'title_intro': official_intro,
         'n_short_titles_intro': len(short_intro),
+        "n_original_bipartisan": n_original_bipartisan,
     }
 
     action_rows = []

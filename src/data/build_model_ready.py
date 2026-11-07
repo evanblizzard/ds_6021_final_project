@@ -145,6 +145,10 @@ df["early_intro"] = (df["days_left_in_congress"] > 700).astype(int)
 chamber_median = df.groupby(["congress", "origin_chamber"])["nominate_dim1"].transform("median")
 df["dist_from_median"] = (df["nominate_dim1"] - chamber_median).abs()
 
+# engineered feature - does a bill have cosponsors from opposite party?
+df["is_bipartisan"] = (df["n_original_bipartisan"] > 0).astype(int)
+
+
 # keep only columns model should see
 # so leaving out label_n_laws and anyhting with actions (reveals outcome)
 
@@ -159,7 +163,7 @@ keep = [
 ]
 
 keep += list(TITLE_FLAGS) + ["title_n_words", "has_short_title", "title_intro_missing"]
-keep += ["leadership_number", "has_cosponsors", "early_intro", "dist_from_median"]
+keep += ["leadership_number", "has_cosponsors", "early_intro", "dist_from_median", "n_original_bipartisan", "is_bipartisan"]
 
 
 
