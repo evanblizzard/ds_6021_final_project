@@ -37,16 +37,14 @@ df['abs_nominate_dim1'] = df['nominate_dim1'].abs()
 # ficing up columns
 df['policy_area'] = df['policy_area'].fillna("Unknown")
 
-# lagged LES is empty for freshmen. flag then fill with 0 to keep those bills
-df['lagged_les_missing'] = df['lagged_les'].isna().astype(int)
-df['lagged_les'] = df['lagged_les'].fillna(0)
+
 
 # sponsor_majority = is sponsor in majority party
 df['sponsor_majority'] = df['majority']
 
 SWITCHES = [ # bioguide, congress, switch_date, majority_after
     ("S000709", 111, "2009-04-30", 1), # specter R -> D
-    ("G000565", 111, "2009-12-22", 0), # parker griffith d -> R
+    ("G000557", 111, "2009-12-22", 0), # parker griffith d -> R
     ("V000133", 116, "2019-12-19", 0) # Van Drew D-> R
     
     ]
@@ -57,7 +55,7 @@ for bio, cong, date, after, in SWITCHES: # unpack the tuples into four variables
     # then write those values into sponsor_majority columns for selected rows
 
 
-# senate independents who caucus with the majority count as majority in the 117th/118th
+# senate independents who caucus with the majority count as majority
 indep = (df["sponsor_party"] == "I") & (df["origin_chamber"] == "Senate") & df["congress"].isin([110, 111, 112, 113, 114, 115, 116, 117, 118])
 
 df.loc[indep, 'sponsor_majority'] = 1
