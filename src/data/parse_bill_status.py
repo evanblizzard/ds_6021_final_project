@@ -39,6 +39,14 @@ def parse_one(path):
         if (c.findtext('isOriginalCosponsor') or "").strip().lower() == 'true':
             n_original +=1
 
+    official_intro, short_intro = None, []
+    for t in bill.findall("titles/item"):
+        title_type = t.findtext("titleType") or ""
+        if title_type == "Official Title as Introduced":
+            offical_intro = t.findtext("title")
+        elif title_type == "Short Title(s) as Introduced":
+            short_intro.append(t.findtext("title"))
+
 
     bill_row = {
         "bill_id": bill_id,
@@ -54,7 +62,9 @@ def parse_one(path):
         'sponsor_district': sponsor_district,
         'policy_area': bill.findtext("policyArea/name"), # None when missing
         'n_original_cosponsors': n_original,
-        'label_n_laws': len(bill.findall('laws/item')) # outcome!
+        'label_n_laws': len(bill.findall('laws/item')), # outcome!
+        'title_intro': official_intro,
+        'n_short_titles_intro': len(short_intro),
     }
 
     action_rows = []
@@ -109,6 +119,7 @@ def main():
     bills.to_csv(config.PROCESSED_DIR / "govinfo_bills.csv", index=False)
     actions.to_csv(config.PROCESSED_DIR / "govinfo_actions.csv", index=False)
     print('saved to', config.PROCESSED_DIR)
+    print(bills.groupby("congress")["title_intro"].apply(lambda s: s.isna().mean()))
 
 if __name__ == "__main__":
     main()
