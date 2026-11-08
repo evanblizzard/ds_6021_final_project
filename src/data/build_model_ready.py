@@ -69,9 +69,6 @@ assert df['outcome'].notna().all(), "some bills have no label"
 end_date = pd.to_datetime((1789 + 2 * df["congress"]).astype(str) + "-01-03")
 df['days_left_in_congress'] = (end_date - pd.to_datetime(df['introduced_date'])).dt.days
 
-# commemorative: 1 if title looks like post office or coin or naming bill
-df['commemorative'] = df['title'].str.contains(COMMEM_PATTERN, case=False, na=False).astype(int)
-
 
 # abs_nominate_dim1: how far from center, ignoring left v right
 df['abs_nominate_dim1'] = df['nominate_dim1'].abs()
@@ -79,7 +76,8 @@ df['abs_nominate_dim1'] = df['nominate_dim1'].abs()
 
 title = df["title_intro"].fillna(df["title"])
 df["title_intro_missing"] = df["title_intro"].isna().astype(int)
-
+# commemorative: 1 if title looks like post office or coin or naming bill
+df['commemorative'] = title.str.contains(COMMEM_PATTERN, case=False, na=False).astype(int)
 # binary columns for each category in the TITLE_FLAGS dictionary
 for col, pattern in TITLE_FLAGS.items():
     df[col] = title.str.contains(pattern, case=False, regex=True, na=False).astype(int)
@@ -111,7 +109,7 @@ for bio, cong, date, after, in SWITCHES: # unpack the tuples into four variables
 
 
 # senate independents who caucus with the majority count as majority
-indep = (df["sponsor_party"] == "I") & (df["origin_chamber"] == "Senate") & df["congress"].isin([110, 111, 112, 113, 114, 115, 116, 117, 118])
+indep = (df["sponsor_party"] == "I") & (df["origin_chamber"] == "Senate") & df["congress"].isin([110, 111, 112, 113, 117, 118])
 
 df.loc[indep, 'sponsor_majority'] = 1
 df['sponsor_party'] = df['sponsor_party'].replace({'I': 'Other', 'L': 'Other'}) # tiny parties -> 1 group
@@ -164,7 +162,7 @@ keep = [
 
 keep += list(TITLE_FLAGS) + ["title_n_words", "has_short_title", "title_intro_missing"]
 keep += ["leadership_number", "has_cosponsors", "early_intro", "dist_from_median", "n_original_bipartisan", "is_bipartisan"]
-
+keep += ["unified_gov", "sponsor_pres_party", "other_chamber_same_party", "sponsor_trifecta"]
 
 
 # demographics only exist 
