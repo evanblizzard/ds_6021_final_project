@@ -17,8 +17,13 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import average_precision_score, confusion_matrix, precision_recall_fscore_support
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.preprocessing import OrdinalEncoder
+from sklearn.metrics import f1_score
+from itertools import product
+
+WEIGHT_GRID = [0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8, 10]
 
 SEED = 6021
+PRIMARY = "f1_macro"
 ROOT = Path(__file__).resolve().parents[2] # src/models/model_setup.py -> repo root
 DATA = ROOT / "data" / "processed"
 
@@ -143,3 +148,25 @@ def ap_law(est, X, y):
     return average_precision_score(y == 3, proba[:, list(est.classes_).index(3)])
 
 SCORING = {"f1_macro": "f1_macro", "bal_acc": "balanced_accuracy", "acc": "accuracy", "ap_law": ap_law}
+
+
+def tune_weights(proba, y, grid=WEIGHT_GRID, classes=CLASSES):
+    """
+    Find the per-class multipliers on predicted probabilities that maximize macro-F1.
+    proba: (n, 3) out-of-fold predict_proba output, with columns ordered like classes
+    y: the true labels for the same rows
+    Returns (weights, best_f1, f1_at_argmax)where weights is an array (1, w_pass, w_law)
+    Weight on died fixed at 1 bc scaling all three weights by same constant doesn't change argmax, so only ratio between w_pass and w_law matters"""
+
+    y = np.asarray(y)
+    f1_argmax = f1_score(y, classes[proba.argmax(axis=1)], average="macro")
+
+    best_f1, best_w = -1.0, np.array([1.0, 1.0, 1.0])
+    for w_pass, w_law in product(grid, grid):
+        w = np.array([1.0, w_pass, w_law])
+        pred = classes[(proba * w).argmax(axis=1)]
+        f1 = f1_score(y, pred, average="macro")
+        if f1 > best_f1:
+            best_f1, best_w = f1, w
+
+    return best_w, best_f1, f1_argmax

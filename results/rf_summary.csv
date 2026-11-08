@@ -1,0 +1,2 @@
+model,f1_argmax,f1_tuned,ap_law,weights
+rf,0.5134526500448203,0.5134526500448203,0.31748744749164226,"[np.float64(1.0), np.float64(1.0), np.float64(1.0)]"
